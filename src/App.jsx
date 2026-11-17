@@ -63,29 +63,20 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState(FLEET[0].id);
   const [pickupDate, setPickupDate] = useState(tomorrow());
   const [returnDate, setReturnDate] = useState(plusDays(tomorrow(), 3));
-  const [location, setLocation] = useState(CLIENT_CONFIG.pickupLocations[0]);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [error, setError] = useState("");
+  const [pickupLocation, setPickupLocation] = useState(CLIENT_CONFIG.pickupLocations[0]);
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
   const selectedCar = FLEET.find((car) => car.id === selectedId) ?? FLEET[0];
   const days = useMemo(() => Math.max(1, Math.ceil((new Date(`${returnDate}T12:00:00`).getTime() - new Date(`${pickupDate}T12:00:00`).getTime()) / 86400000)), [pickupDate, returnDate]);
-  const total = days * selectedCar.price;
+  const totalPrice = days * selectedCar.price;
 
   const chooseCar = (id) => {
     setSelectedId(id);
     document.getElementById("reservation")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const submitBooking = (event) => {
-    event.preventDefault();
-    if (!name.trim() || !pickupDate || !returnDate || new Date(returnDate) < new Date(pickupDate)) {
-      setError("Merci de renseigner votre nom et des dates valides.");
-      return;
-    }
-    setError("");
-    const message = `Bonjour *${CLIENT_CONFIG.businessName}*,\n\nJe souhaite réserver un véhicule :\n- *Véhicule :* ${selectedCar.name}\n- *Dates :* du ${formatDate(pickupDate)} au ${formatDate(returnDate)} (${days} jour${days > 1 ? "s" : ""})\n- *Lieu de prise en charge :* ${location}\n- *Total estimé :* ${total.toLocaleString("fr-FR")} DH\n- *Nom :* ${name.trim()}\n- *Téléphone :* ${phone || "à confirmer"}\n\nMerci de me confirmer la disponibilité !`;
-    window.open(`https://wa.me/${CLIENT_CONFIG.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
-  };
+  const message = `Bonjour *${CLIENT_CONFIG.businessName}*,\n\nJe souhaite réserver un véhicule :\n- *Véhicule :* ${selectedCar.name}\n- *Dates :* du ${pickupDate || "Non précisé"} au ${returnDate || "Non précisé"} (${days} jour${days > 1 ? "s" : ""})\n- *Lieu de prise en charge :* ${pickupLocation || "Non précisé"}\n- *Total estimé :* ${totalPrice.toLocaleString("fr-FR")} DH\n- *Nom :* ${clientName.trim() || "Non précisé"}\n- *Téléphone :* ${clientPhone.trim() || "Non précisé"}\n\nMerci de me confirmer la disponibilité !`;
+  const whatsappUrl = `https://wa.me/212663278633?text=${encodeURIComponent(message)}`;
 
   return (
     <main className="min-h-screen overflow-hidden bg-zinc-950 text-zinc-100 pb-20 lg:pb-0">
@@ -131,20 +122,19 @@ export default function Home() {
       <section id="reservation" className="scroll-mt-20 px-5 py-16 lg:px-8 lg:py-24">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1.25fr] lg:items-start">
           <div className="lg:pt-8"><p className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">Réservation express</p><h2 className="text-3xl font-black tracking-tight sm:text-4xl">Votre voiture, en quelques clics.</h2><p className="mt-4 leading-7 text-zinc-400">Choisissez vos dates et votre lieu de prise en charge. Nous vous répondons immédiatement sur WhatsApp pour finaliser votre réservation.</p><div className="mt-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5"><p className="font-semibold text-emerald-300">⚡ Réponse rapide garantie</p><p className="mt-1 text-sm text-zinc-400">Un conseiller de {CLIENT_CONFIG.businessName} vous confirme la disponibilité en quelques minutes.</p></div></div>
-          <form onSubmit={submitBooking} className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 shadow-2xl shadow-black/20 sm:p-7">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 shadow-2xl shadow-black/20 sm:p-7">
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="sm:col-span-2"><span className="mb-2 block text-sm font-semibold">Véhicule souhaité</span><select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} className="field">{FLEET.map((car) => <option key={car.id} value={car.id}>{car.name} — {car.price} DH/jour</option>)}</select></label>
               <label><span className="mb-2 block text-sm font-semibold">Date de départ</span><input type="date" min={tomorrow()} value={pickupDate} onChange={(e) => { setPickupDate(e.target.value); if (e.target.value >= returnDate) setReturnDate(plusDays(e.target.value, 1)); }} className="field" /></label>
               <label><span className="mb-2 block text-sm font-semibold">Date de retour</span><input type="date" min={plusDays(pickupDate, 1)} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="field" /></label>
-              <label className="sm:col-span-2"><span className="mb-2 block text-sm font-semibold">Lieu de prise en charge</span><select value={location} onChange={(e) => setLocation(e.target.value)} className="field">{CLIENT_CONFIG.pickupLocations.map((item) => <option key={item}>{item}</option>)}</select></label>
-              <label><span className="mb-2 block text-sm font-semibold">Votre nom complet</span><input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex. Yassine Alaoui" className="field" /></label>
-              <label><span className="mb-2 block text-sm font-semibold">Téléphone <span className="font-normal text-zinc-500">(optionnel)</span></span><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 00 00 00 00" className="field" /></label>
+              <label className="sm:col-span-2"><span className="mb-2 block text-sm font-semibold">Lieu de prise en charge</span><select value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} className="field">{CLIENT_CONFIG.pickupLocations.map((item) => <option key={item}>{item}</option>)}</select></label>
+              <label><span className="mb-2 block text-sm font-semibold">Votre nom complet</span><input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Ex. Yassine Alaoui" className="field" /></label>
+              <label><span className="mb-2 block text-sm font-semibold">Téléphone <span className="font-normal text-zinc-500">(optionnel)</span></span><input type="tel" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="06 00 00 00 00" className="field" /></label>
             </div>
-            <div className="mt-6 flex items-center justify-between rounded-xl border border-zinc-700 bg-zinc-950/70 p-4"><div><p className="text-sm text-zinc-400">Estimation pour <strong className="text-zinc-200">{selectedCar.name}</strong></p><p className="mt-1 text-xs text-zinc-500">{days} jour{days > 1 ? "s" : ""} · {selectedCar.price} DH / jour</p></div><p className="text-right text-2xl font-black text-emerald-400">{total.toLocaleString("fr-FR")} <span className="text-sm">DH</span></p></div>
-            {error && <p role="alert" className="mt-4 text-sm text-red-400">{error}</p>}
-            <button type="submit" className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3.5 font-bold text-zinc-950 transition hover:bg-emerald-400">Confirmer la réservation sur WhatsApp <span>↗</span></button>
+            <div className="mt-6 flex items-center justify-between rounded-xl border border-zinc-700 bg-zinc-950/70 p-4"><div><p className="text-sm text-zinc-400">Estimation pour <strong className="text-zinc-200">{selectedCar.name}</strong></p><p className="mt-1 text-xs text-zinc-500">{days} jour{days > 1 ? "s" : ""} · {selectedCar.price} DH / jour</p></div><p className="text-right text-2xl font-black text-emerald-400">{totalPrice.toLocaleString("fr-FR")} <span className="text-sm">DH</span></p></div>
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3.5 font-bold text-zinc-950 transition hover:bg-emerald-400">Confirmer la réservation sur WhatsApp <span>↗</span></a>
             <p className="mt-3 text-center text-xs text-zinc-500">Aucune carte bancaire demandée · Confirmation instantanée</p>
-          </form>
+          </div>
         </div>
       </section>
 
